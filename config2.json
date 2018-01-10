@@ -1,8 +1,8 @@
  { 
-     "nodes": ["http://localhost:80", "http://localhost:82", "http://localhost:83"],
+     "nodes": ["0", "1", "3"],
      "events_len": 5,
      "ping_req_cnt": 2,
      "ping_timeout": 1.0,
-     "protocol_time": 2.0,
-     "name" : "http://localhost:81"
+     "protocol_time": 3.0,
+     "name" : "2"
  }
