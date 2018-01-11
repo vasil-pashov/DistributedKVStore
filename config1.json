@@ -4,6 +4,7 @@
     "ping_req_cnt": 2,
     "ping_timeout": 1.0,
     "protocol_time": 3.0,
-    "name" : "1"
+    "name" : "1",
+    "replicas": 2
 }
 

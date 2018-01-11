@@ -1,6 +1,7 @@
 from network import Network
 # from swim_node import SWIMNode
 from db_node import DBNode
+import random
 import sys
 
 network = Network()
@@ -23,6 +24,17 @@ nodes = {}
 #     network.add_node(new_node.name, 'UP')
 #     new_node.thread_receive()
 #     new_node.thread_ping_loop()
+
+
+def init():
+    configs = ['config.json', 'config1.json', 'config2.json']
+    for config in configs:
+        new_node = DBNode(config, network)
+        nodes[new_node.name] = new_node
+        network.add_node(new_node, 'UP')
+        new_node.start()
+
+init()
 
 while True:
     action = raw_input()
@@ -50,3 +62,9 @@ while True:
         nodes[new_node.name] = new_node
         network.add_node(new_node, action[2])
         new_node.start()
+    elif action[0] == 'write':
+        name, node = random.choice(list(nodes.items()))
+        node.write(action[1], action[2])
+    elif action[0] == 'read':
+        name, node = random.choice(list(nodes.items()))
+        print(node.read(action[1]))

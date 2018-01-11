@@ -50,8 +50,8 @@ class SWIMNode(object):
     def _receive_loop(self):
         while not self.__shutdowned:
             (src, msg) = self._network.receive(self.name)
-            print("Node {} has message from {}. Message {}".format(
-                self.name, src, msg['type']))
+            # print("Node {} has message from {}. Message {}".format(
+            #    self.name, src, msg['type']))
             self._process_message(src, msg)
 
     # Ping nodes using round robin rotation
@@ -75,7 +75,7 @@ class SWIMNode(object):
         return target
 
     def _ping(self, target):
-        print("{} pinging node {}".format(self.name, target))
+        # print("{} pinging node {}".format(self.name, target))
         self._send(target, 'ping')
         self._ack = {target: False}
 
@@ -83,8 +83,8 @@ class SWIMNode(object):
     def _indirect_ping(self, target):
         if not self._ack[target]:
             mediator_nodes = self._get_indirect_pingers(target)
-            print("{} is indirect pinging {} trough {}".format(
-                self.name, target, mediator_nodes))
+            # print("{} is indirect pinging {} trough {}".format(
+            #    self.name, target, mediator_nodes))
             self.__ack_lock.acquire()
             for node in mediator_nodes:
                 self._ack[node] = False
@@ -110,7 +110,7 @@ class SWIMNode(object):
     # to be suspected after some interval see if it responded and kill if not
     def _suspect(self, target):
         if not self._ack_received():
-            print("{} suspects node {}".format(self.name, target))
+            # print("{} suspects node {}".format(self.name, target))
             self.__lock.acquire()
             if target in self.node_status:
                 if self.node_status[target].status == 'up':
@@ -120,15 +120,16 @@ class SWIMNode(object):
             self.__lock.release()
             Timer(self.__ping_timeout, self._check_suspected, (target, )).start()
         else:
-            print("Indirect ping successful")
+            pass
+            # print("Indirect ping successful")
 
     # If node is suspected and there was no signal from it declare it dead
     def _check_suspected(self, target):
-        print("{} checks if suspected node {} is dead".format(self.name, target))
+        # print("{} checks if suspected node {} is dead".format(self.name, target))
         self.__lock.acquire()
         if (target in self.node_status and
                 self.node_status[target].status == 'suspected'):
-            print("{} says node {} is dead".format(self.name, target))
+            # print("{} says node {} is dead".format(self.name, target))
             incarnation = self.node_status[target].incarnation
             self.events.append(Event('dead', target, incarnation))
             self.nodes.remove(target)
@@ -178,7 +179,7 @@ class SWIMNode(object):
         if src in self._ping_req_ack:
             self._ping_req_ack[src] = True
 
-    # check if ack is received when the sender is intermediate node 
+    # check if ack is received when the sender is intermediate node
     def _ping_req_ack_receive(self, src, target):
         ack_received = False
         try:
@@ -186,7 +187,7 @@ class SWIMNode(object):
         except KeyError:
             pass
         if ack_received:
-            print("Ping ack from {} to {} successful".format(src, target))
+            # print("Ping ack from {} to {} successful".format(src, target))
             msg_type = 'ack'
         else:
             msg_type = 'empty'

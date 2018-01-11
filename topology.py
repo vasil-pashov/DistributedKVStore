@@ -39,7 +39,7 @@ class VirtualRing:
 
     def add_node(self, name):
         ring_pos = self.ring_position(name)
-        insert_idx = self._binary_search(ring_pos)
+        insert_idx = utils.binary_search(self.nodes, ring_pos, lambda t: t[1])
         self.nodes.insert(insert_idx, (name, ring_pos))
 
     # Find position in ring and using binnary search and delete node if it is

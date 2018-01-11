@@ -70,6 +70,7 @@ class DBNode(SWIMNode):
                 payload = {'type': 'read_repair',
                            'key': key, 'value': last_write}
                 self._network.send(self.name, res[0], payload)
+        return last_write
 
     def __get_read_results(self, key, read_nodes):
         res = []
@@ -119,7 +120,8 @@ class DBNode(SWIMNode):
             with open(data_file) as data:
                 self.__store = json.load(data)
         else:
-            open(data_file, 'a').close()
+            f = open(data_file, 'a')
+            json.dump({}, f)
 
     def __dump(self):
         data_file = "{}_data.json".format(self.name)
