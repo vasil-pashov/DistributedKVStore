@@ -1,5 +1,6 @@
 from network import Network
-from swim_node import SWIMNode
+# from swim_node import SWIMNode
+from db_node import DBNode
 import sys
 
 network = Network()
@@ -45,8 +46,7 @@ while True:
     elif action[0] == 'shutdown':
         nodes[action[1]].shutdown()
     elif action[0] == 'add':
-        new_node = SWIMNode(action[1], network)
+        new_node = DBNode(action[1], network)
         nodes[new_node.name] = new_node
-        network.add_node(new_node.name, action[2])
-        new_node.thread_receive()
-        new_node.thread_ping_loop()
+        network.add_node(new_node, action[2])
+        new_node.start()

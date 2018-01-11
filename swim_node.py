@@ -7,7 +7,7 @@ from node_status import NodeStatus
 from event import Event
 
 
-class SWIMNode:
+class SWIMNode(object):
     def __init__(self, config_file, network):
         self.__read_config(config_file)
         self.__lock = Lock()
