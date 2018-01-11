@@ -9,7 +9,7 @@ from event import Event
 
 class SWIMNode:
     def __init__(self, config_file, network):
-        self._read_config(config_file)
+        self.__read_config(config_file)
         self.__lock = Lock()
         self.__ack_lock = Lock()
         self.__ping_ack_lock = Lock()
@@ -17,12 +17,12 @@ class SWIMNode:
         self.events = collections.deque(maxlen=self.__events_len)
         self.node_status = {node: NodeStatus('up', 0) for node in self.nodes}
         self.__ping_idx = 0
-        self.__network = network
+        self._network = network
         self._ack = {}
         self.__shutdowned = False
         self._ping_req_ack = {}
 
-    def _read_config(self, config_file):
+    def __read_config(self, config_file):
         config_data = json.load(open(config_file))
         random.shuffle(config_data['nodes'])
         self.nodes = config_data['nodes']
@@ -49,11 +49,12 @@ class SWIMNode:
 
     def _receive_loop(self):
         while not self.__shutdowned:
-            (src, msg) = self.__network.receive(self.name)
+            (src, msg) = self._network.receive(self.name)
             print("Node {} has message from {}. Message {}".format(
                 self.name, src, msg['type']))
             self._process_message(src, msg)
 
+    # Ping nodes using round robin rotation
     def _ping_loop(self):
         while not self.__shutdowned:
             target = self._get_ping_target()
@@ -78,6 +79,7 @@ class SWIMNode:
         self._send(target, 'ping')
         self._ack = {target: False}
 
+    # Select intermediate nodes and try pinging trough them
     def _indirect_ping(self, target):
         if not self._ack[target]:
             mediator_nodes = self._get_indirect_pingers(target)
@@ -104,6 +106,8 @@ class SWIMNode:
                     res.append(node)
         return res
 
+    # If no ack received from target or intermediate nodes declare node
+    # to be suspected after some interval see if it responded and kill if not
     def _suspect(self, target):
         if not self._ack_received():
             print("{} suspects node {}".format(self.name, target))
@@ -118,6 +122,7 @@ class SWIMNode:
         else:
             print("Indirect ping successful")
 
+    # If node is suspected and there was no signal from it declare it dead
     def _check_suspected(self, target):
         print("{} checks if suspected node {} is dead".format(self.name, target))
         self.__lock.acquire()
@@ -142,7 +147,7 @@ class SWIMNode:
         if msg['type'] == 'ping':
             self._process_events(msg['events'])
             if src not in self.node_status:
-                self._join_node(src)
+                self._handle_node_join(src)
                 self.events.append(Event('join', src, 0))
             self._send(src, 'ack')
         if msg['type'] == 'ack':
@@ -173,6 +178,7 @@ class SWIMNode:
         if src in self._ping_req_ack:
             self._ping_req_ack[src] = True
 
+    # check if ack is received when the sender is intermediate node 
     def _ping_req_ack_receive(self, src, target):
         ack_received = False
         try:
@@ -187,6 +193,7 @@ class SWIMNode:
         self._send(src, msg_type)
         self._ping_req_ack = {}
 
+    # checks if ack from target or intermediate is received
     def _ack_received(self):
         self.__ack_lock.acquire()
         for node in self._ack:
@@ -196,6 +203,7 @@ class SWIMNode:
         self.__ack_lock.release()
         return False
 
+    # Send ping on behalf of some node
     def _execute_ping_req(self, target):
         self._ping_req_ack[target] = False
         self._send(target, 'ping')
@@ -203,7 +211,7 @@ class SWIMNode:
     def _send(self, target, msg_type, opt_params={}):
         params = {'type': msg_type, 'events': self._prepare_events()}
         params.update(opt_params)
-        self.__network.send(self.name, target, params)
+        self._network.send(self.name, target, params)
 
     def _process_events(self, events):
         for event in events:
@@ -247,7 +255,14 @@ class SWIMNode:
                     Event('alive', self.name, self.__incarnation))
             else:
                 self.events.append(event)
-                self._remove_node(event.node)
+                self._handle_node_down(event.node)
+        elif (event.event == 'join' and self.name != event.node and
+                event.node not in self.node_status):
+            self.events.append(event)
+            self._handle_node_join(self, event.node)
+
+    def _handle_node_down(self, node):
+        self._remove_node(node)
 
     def __set_member_status(self, node, status):
         self.__lock.acquire()
@@ -261,7 +276,7 @@ class SWIMNode:
         except KeyError:
             return None
 
-    def _join_node(self, node):
+    def _handle_node_join(self, node):
         self.__lock.acquire()
         if node not in self.node_status:
             self.node_status[node] = NodeStatus('up', 0)

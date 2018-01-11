@@ -19,7 +19,7 @@ class VirtualRing:
     # Usefull for geting replica nodes
     def key_to_nodes(self, key, nodes_cnt):
         if len(self.nodes) <= nodes_cnt:
-            return [node for (node, _) in self.nodes]
+            return []  # [node for (node, _) in self.nodes]
         else:
             idx = self._key_to_node_idx(key)
             taken = 0
@@ -30,6 +30,7 @@ class VirtualRing:
                 idx = idx + 1 if idx + 1 < len(self.nodes) else 0
             return res
 
+    # At which index in self.nodes is the node responsible for key
     def _key_to_node_idx(self, key):
         ring_pos = self.ring_position(key)
         if ring_pos > self.nodes[-1][1]:

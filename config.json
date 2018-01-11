@@ -5,6 +5,5 @@
      "ping_timeout": 1.0,
      "protocol_time": 3.0,
      "name" : "0",
-     "write_quorum": "3",
-     "read_quorum" : "3"
+     "replicas": "3"
  }
