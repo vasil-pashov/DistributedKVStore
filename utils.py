@@ -13,4 +13,4 @@ def binary_search(lst, value, selector=lambda x: x):
         else:
             r = mid_point - 1
     res_el = lst[r]
-    return r if selector(res_el) > value else r + 1
+    return r if selector(res_el) >= value else r + 1

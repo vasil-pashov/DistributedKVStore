@@ -18,7 +18,7 @@ class VirtualRing:
     # Maps key to many nodes
     # Usefull for geting replica nodes
     def key_to_nodes(self, key, nodes_cnt):
-        if len(self.nodes) <= nodes_cnt:
+        if len(self.nodes) < nodes_cnt:
             return []  # [node for (node, _) in self.nodes]
         else:
             idx = self._key_to_node_idx(key)
@@ -35,7 +35,8 @@ class VirtualRing:
         ring_pos = self.ring_position(key)
         if ring_pos > self.nodes[-1][1]:
             return 0
-        return utils.binary_search(self.nodes, ring_pos, lambda t: t[1])
+        idx = utils.binary_search(self.nodes, ring_pos, lambda t: t[1])
+        return idx if idx < len(self.nodes) else 0
 
     def add_node(self, name):
         ring_pos = self.ring_position(name)
@@ -47,9 +48,14 @@ class VirtualRing:
     def remove_node(self, name):
         ring_pos = self.ring_position(name)
         node_pos = utils.binary_search(self.nodes, ring_pos, lambda t: t[1])
+        print("Removing node {}, ring_pos {} reponsible node pos {} all nodes {}".format(
+            name, ring_pos, node_pos, self.nodes))
         if self.nodes[node_pos][0] == name:
             del self.nodes[node_pos]
 
+    # Where on the ring is the key
+    # This is used later to find the node reponsible
+    # for this key
     def ring_position(self, key):
         return self._hash(key) % self.slots
 

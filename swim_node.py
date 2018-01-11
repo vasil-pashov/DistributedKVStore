@@ -21,6 +21,7 @@ class SWIMNode(object):
         self._ack = {}
         self.__shutdowned = False
         self._ping_req_ack = {}
+        print("init node {}".format(self.name))
 
     def __read_config(self, config_file):
         config_data = json.load(open(config_file))
@@ -34,6 +35,9 @@ class SWIMNode(object):
 
     def shutdown(self):
         self.__shutdowned = True
+
+    def start(self):
+        return self.thread_receive(), self.thread_ping_loop()
 
     def thread_ping_loop(self):
         ping_t = Thread(target=self._ping_loop)
@@ -132,11 +136,14 @@ class SWIMNode(object):
             # print("{} says node {} is dead".format(self.name, target))
             incarnation = self.node_status[target].incarnation
             self.events.append(Event('dead', target, incarnation))
-            self.nodes.remove(target)
-            del self.node_status[target]
+            self.__lock.release()
+            self._handle_node_down(target)
+            return
+            # self.nodes.remove(target)
+            # del self.node_status[target]
         self.__lock.release()
 
-    def _remove_node(self, node):
+    def __remove_node(self, node):
         self.__lock.acquire()
         if node in self.nodes:
             self.nodes.remove(node)
@@ -254,7 +261,7 @@ class SWIMNode(object):
                 self.__incarnation += 1
                 self.events.append(
                     Event('alive', self.name, self.__incarnation))
-            else:
+            elif event.incarnation >= current_status.incarnation:
                 self.events.append(event)
                 self._handle_node_down(event.node)
         elif (event.event == 'join' and self.name != event.node and
@@ -263,7 +270,8 @@ class SWIMNode(object):
             self._handle_node_join(self, event.node)
 
     def _handle_node_down(self, node):
-        self._remove_node(node)
+        print("Swim node {} node {} is down".format(self.name, node))
+        self.__remove_node(node)
 
     def __set_member_status(self, node, status):
         self.__lock.acquire()

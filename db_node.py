@@ -19,7 +19,9 @@ class DBNode(SWIMNode):
         self.__read_config(config_file)
         self.__store = {}
         self.__read_persistent_storage()
-        Timer(60, self.__dump).start()
+        timer = Timer(20, self.__dump)
+        timer.setDaemon(True)
+        timer.start()
 
     def start(self):
         ping_thread = self.thread_ping_loop()
@@ -40,18 +42,20 @@ class DBNode(SWIMNode):
 
     def write(self, key, value):
         write_nodes = self.ring.key_to_nodes(key, self.__replicas)
-        if write_nodes == []:
-            pass  # No nodes
-        else:
+        if write_nodes != []:
+            print("Write {}: {} to {}".format(key, value, write_nodes))
             timestamp = time()
-            for node in write_nodes:
-                if node != self.nodes:
-                    self._network.send(self.name, 'write',
-                                       (key, value, timestamp))
+            for node, _ in write_nodes:
+                if node != self.name:
+                    payload = {'type': 'write', 'key': key,
+                               'value': value, 'timestamp': timestamp}
+                    self._network.send(self.name, node, payload)
                 else:
                     self._write(key, value, timestamp)
 
     def _process_message(self, src, msg):
+        if msg['type'] not in ['ack', 'ping', 'ping_req']:
+            print("{} sends {}".format(src, msg))
         super(DBNode, self)._process_message(src, msg)
         if msg['type'] == 'read_repair':
             try:
@@ -60,6 +64,8 @@ class DBNode(SWIMNode):
                 pass
         elif msg['type'] == 'stabilize':
             self.__store[msg['key']] = msg['value']
+        elif msg['type'] == 'write':
+            self._write(msg['key'], msg['value'], msg['timestamp'])
 
     def read(self, key):
         read_nodes = self.ring.key_to_nodes(key, self.__replicas)
@@ -82,6 +88,7 @@ class DBNode(SWIMNode):
         return res
 
     def _handle_node_down(self, node):
+        print("DB node {} says {} is down".format(self.name, node))
         super(DBNode, self)._handle_node_down(node)
         self.ring.remove_node(node)
         self.__stabilize()
@@ -116,15 +123,25 @@ class DBNode(SWIMNode):
 
     def __read_persistent_storage(self):
         data_file = "{}_data.json".format(self.name)
+        print("Reading {}".format(data_file))
         if os.path.isfile(data_file):
             with open(data_file) as data:
-                self.__store = json.load(data)
+                try:
+                    self.__store = json.load(data)
+                except ValueError:
+                    self.__store = {}
         else:
             f = open(data_file, 'a')
             json.dump({}, f)
 
+    # TO DO fix dump by making DataObject parsable
     def __dump(self):
         data_file = "{}_data.json".format(self.name)
+        print("Dumping storage")
         with open(data_file, 'w') as fp:
-            json.dump(self.__store, fp, sort_keys=True, indent=4)
-        Timer(60, self.__dump).start()
+            print(self.__store)
+            json.dump(
+                {key: self.__store[key].data for key in self.__store}, fp, sort_keys=True, indent=4)
+        timer = Timer(20, self.__dump)
+        timer.setDaemon(True)
+        timer.start()

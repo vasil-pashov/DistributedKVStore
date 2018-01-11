@@ -1,5 +1,5 @@
 from network import Network
-# from swim_node import SWIMNode
+from swim_node import SWIMNode
 from db_node import DBNode
 import random
 import sys
@@ -32,7 +32,9 @@ def init():
         new_node = DBNode(config, network)
         nodes[new_node.name] = new_node
         network.add_node(new_node, 'UP')
-        new_node.start()
+    for node in nodes:
+        nodes[node].start()
+
 
 init()
 
@@ -45,7 +47,8 @@ while True:
     elif action[0] == 'alive':
         for node_name in nodes:
             node = nodes[node_name]
-            print("Node {} knows about {}".format(node_name, node.nodes))
+            print("Node {} knows about {} and has ring {}".format(
+                node_name, node.nodes, node.ring.nodes))
     elif action[0] == 'die':
         sys.exit()
     elif action[0] == 'revive':
