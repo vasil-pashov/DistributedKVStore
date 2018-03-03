@@ -81,9 +81,10 @@ class DBNode(SWIMNode):
     def __get_read_results(self, key, read_nodes):
         res = []
         payload = {'type': 'read', 'key': key}
-        for node in read_nodes:
+        for node, _ in read_nodes:
             response = self._network.request(self.name, node, payload)
-            if response['type'] == 'ok':
+            print(response)
+            if response['status'] == 'ok':
                 res.append((node, response['value']))
         return res
 
@@ -102,7 +103,7 @@ class DBNode(SWIMNode):
     # For each key if it has no longer place it is deleted
     # And message to write it is send to the new owners
     def __stabilize(self):
-        for key in self.__store:
+        for key in self.__store.keys():
             nodes = self.ring.key_to_nodes(key, self.__replicas)
             if self.name not in nodes:
                 for node in nodes:

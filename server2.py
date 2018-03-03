@@ -8,26 +8,8 @@ network = Network()
 
 nodes = {}
 
-# a = Node('config.json', network)
-# b = Node('config2.json', network)
-
-# network.add_node(a.name, 'UP')
-# network.add_node(b.name, 'UP')
-# a.thread_receive()
-# b.thread_receive()
-# a.thread_ping_loop()
-# b.thread_ping_loop()
-
-# for conf in ['config.json', 'config1.json', 'config2.json']:
-#     new_node = Node(conf, network)
-#     nodes[new_node.name] = new_node
-#     network.add_node(new_node.name, 'UP')
-#     new_node.thread_receive()
-#     new_node.thread_ping_loop()
-
-
 def init():
-    configs = ['config.json', 'config1.json', 'config2.json']
+    configs = ['config/config.json', 'config/config1.json', 'config/config2.json']
     for config in configs:
         new_node = DBNode(config, network)
         nodes[new_node.name] = new_node
